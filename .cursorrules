@@ -1,0 +1,165 @@
+# 碰一碰发抖音视频项目开发规则
+
+## 项目概述
+这是一个结合NFC技术和抖音SDK的营销推广工具，通过碰一碰NFC标签直接发布抖音视频。
+
+## 技术栈
+- 前端：Vue.js 3 + Vite
+- 后端：Node.js + Express
+- API集成：Kuaizi OpenAPI + 抖音开放平台
+- 数据库：MongoDB/MySQL
+- 部署：云服务器 + HTTPS
+
+## 开发规范
+
+### 代码风格
+- 统一使用ES6+语法
+- 使用async/await处理异步操作
+- 函数命名采用驼峰命名法
+- 常量使用全大写下划线命名
+- 中文注释优先，关键逻辑必须注释
+
+### 项目结构
+```
+/server
+  /controllers     # 控制器
+  /services       # 业务逻辑
+  /middleware     # 中间件
+  /config         # 配置文件
+  /utils          # 工具函数
+/client
+  /src
+    /components   # Vue组件
+    /pages        # 页面组件
+    /services     # API调用
+    /utils        # 前端工具
+/docs             # 项目文档
+/.env             # 环境变量
+```
+
+### API开发规则
+1. 所有API响应统一格式：
+   ```javascript
+   {
+     code: 200,
+     message: "success",
+     data: {}
+   }
+   ```
+
+2. Kuaizi API调用必须包含：
+   - 时间戳签名验证
+   - 错误重试机制
+   - 视频使用状态管理
+
+3. 抖音SDK集成要求：
+   - 支持iOS/Android双平台
+   - 处理授权回调
+   - 视频格式验证
+
+### 安全规范
+- 环境变量存储敏感信息
+- API密钥不得硬编码
+- 实现请求频率限制
+- 用户输入必须验证和过滤
+
+### NFC相关
+- 支持NTAG213/215/216标签
+- URL长度控制在200字符内
+- 包含错误处理页面
+- 支持多种NFC芯片类型
+
+### 前端开发
+- 移动端优先设计
+- 支持PWA特性
+- 视频预加载优化
+- 网络异常处理
+
+### 后端开发
+- RESTful API设计
+- 数据库连接池管理
+- 日志记录和监控
+- 缓存策略实现
+
+### 测试要求
+- 单元测试覆盖率>80%
+- API接口测试必须完整
+- 移动端兼容性测试
+- NFC功能真机测试
+
+### 部署配置
+- 使用Docker容器化
+- HTTPS证书配置
+- CDN静态资源加速
+- 服务器监控告警
+
+### 文档要求
+- README.md包含完整部署说明
+- API文档使用Swagger
+- 关键功能录制演示视频
+- 问题排查手册
+
+### 特殊注意事项
+1. Kuaizi API限制：
+   - 注意账户余额检查
+   - 处理40000/40005/61000错误码
+   - 视频素材去重逻辑
+
+2. 抖音SDK：
+   - 申请开放平台权限
+   - 处理分享回调
+   - 视频尺寸和时长限制
+
+3. NFC兼容性：
+   - iPhone需iOS 11+
+   - Android需NFC权限
+   - 浏览器兼容性处理
+
+### 性能优化
+- 视频预压缩处理
+- 图片WebP格式优化
+- API响应缓存策略
+- 移动端网络适配
+
+### 错误处理
+- 统一错误码定义
+- 用户友好提示信息
+- 异常日志记录
+- 降级方案准备
+
+## 环境变量模板
+```
+# Kuaizi API
+KUAIZI_APP_KEY=your_app_key
+KUAIZI_APP_SECRET=your_app_secret
+KUAIZI_API_BASE=https://openapi.kuaizi.co/v2
+
+# 抖音开放平台
+DOUYIN_APP_ID=your_douyin_app_id
+DOUYIN_APP_SECRET=your_douyin_app_secret
+
+# 服务器配置
+PORT=3000
+NODE_ENV=production
+DB_CONNECTION_STRING=your_db_string
+
+# 域名配置
+DOMAIN=https://your-domain.com
+```
+
+## 开发流程
+1. 先完成NFC跳转页面
+2. 集成Kuaizi API获取视频
+3. 实现抖音SDK分享功能
+4. 添加管理后台功能
+5. 性能优化和测试
+6. 部署上线和监控 
+
+# 1. 安装依赖
+npm run install:all
+
+# 2. 启动开发服务器  
+npm run dev
+
+# 3. 访问首页
+访问 http://localhost:5173 
