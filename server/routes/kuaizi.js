@@ -7,13 +7,13 @@ const kuaiziService = require('../services/kuaiziService');
  */
 router.get('/videos', async (req, res) => {
   try {
-    const { page = 1, limit = 10, category } = req.query;
+    const { page = 1, size = 10, category } = req.query;
     
-    const videos = await kuaiziService.getVideoList({
+    const videos = await kuaiziService.getMaterialList({
+      type: 'video',
       page: parseInt(page),
-      limit: parseInt(limit),
-      category,
-      used: false
+      size: parseInt(size),
+      category
     });
 
     res.json({
@@ -37,13 +37,19 @@ router.get('/videos', async (req, res) => {
  */
 router.get('/test', async (req, res) => {
   try {
-    const isConnected = await kuaiziService.checkConnection();
+    // 通过获取少量数据来测试连接
+    const testData = await kuaiziService.getMaterialList({
+      type: 'video',
+      page: 1,
+      size: 1
+    });
     
     res.json({
       code: 200,
       message: 'success',
       data: {
-        connected: isConnected,
+        connected: true,
+        total_videos: testData.total,
         timestamp: new Date().toISOString()
       }
     });

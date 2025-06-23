@@ -49,8 +49,15 @@ router.get('/redirect', async (req, res) => {
   } catch (error) {
     console.error('❌ NFC跳转处理失败:', error);
     
-    // 返回错误页面
-    res.redirect('/error?msg=' + encodeURIComponent('获取视频失败，请重试'));
+    // 根据错误类型返回不同页面
+    let errorMsg = '获取视频失败，请重试';
+    if (error.message.includes('余额不足')) {
+      errorMsg = '账户余额不足，请联系管理员';
+    } else if (error.message.includes('签名验证失败')) {
+      errorMsg = 'API配置错误，请联系技术支持';
+    }
+    
+    res.redirect('/error?msg=' + encodeURIComponent(errorMsg));
   }
 });
 
@@ -65,7 +72,7 @@ function generateDouyinUrl(videoData, isIOS) {
     : 'snssdk1128://platformapi/startapp'; // Android抖音scheme
 
   const params = new URLSearchParams({
-    appKey: process.env.DOUYIN_APP_ID,
+    appKey: process.env.DOUYIN_APP_ID || 'default_app_id',
     videoPath: videoData.video_url,
     caption: videoData.caption || '',
     hashtags: videoData.hashtags ? videoData.hashtags.join(',') : '',
@@ -84,24 +91,62 @@ router.get('/videos', async (req, res) => {
   try {
     const { page = 1, limit = 10, category } = req.query;
     
-    const videos = await kuaiziService.getVideoList({
+    // 使用新的getMaterialList方法
+    const materialData = await kuaiziService.getMaterialList({
+      type: 'video',
       page: parseInt(page),
-      limit: parseInt(limit),
-      category,
-      used: false // 只获取未使用的视频
+      size: parseInt(limit),
+      category: category || ''
     });
 
     res.json({
       code: 200,
       message: 'success',
-      data: videos
+      data: {
+        list: materialData.list || [],
+        total: materialData.total || 0,
+        page: parseInt(page),
+        limit: parseInt(limit)
+      }
     });
 
   } catch (error) {
     console.error('获取视频列表失败:', error);
     res.status(500).json({
       code: 500,
-      message: '获取视频列表失败',
+      message: error.message || '获取视频列表失败',
+      data: null
+    });
+  }
+});
+
+/**
+ * 获取素材统计信息（替代账户余额检查）
+ */
+router.get('/account', async (req, res) => {
+  try {
+    // 获取素材统计信息作为账户状态检查
+    const materialData = await kuaiziService.getMaterialList({
+      type: 'video',
+      page: 1,
+      size: 1
+    });
+    
+    res.json({
+      code: 200,
+      message: 'success',
+      data: {
+        total_materials: materialData.total,
+        status: 'active',
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('获取账户信息失败:', error);
+    res.status(500).json({
+      code: 500,
+      message: error.message || '获取账户信息失败',
       data: null
     });
   }
@@ -153,12 +198,45 @@ router.post('/trigger', [
 
   } catch (error) {
     console.error('手动触发失败:', error);
-    res.status(500).json({
-      code: 500,
-      message: '服务器错误',
+    
+    let code = 500;
+    let message = '服务器错误';
+    
+    if (error.message.includes('余额不足')) {
+      code = 402;
+      message = '账户余额不足';
+    } else if (error.message.includes('签名验证失败')) {
+      code = 401;
+      message = 'API认证失败';
+    }
+    
+    res.status(code >= 500 ? 500 : 400).json({
+      code,
+      message: error.message || message,
       data: null
     });
   }
+});
+
+/**
+ * 重置已使用视频列表（仅用于开发测试）
+ */
+router.post('/reset-used', (req, res) => {
+  if (process.env.NODE_ENV !== 'development') {
+    return res.status(403).json({
+      code: 403,
+      message: '仅开发环境可用',
+      data: null
+    });
+  }
+  
+  kuaiziService.resetUsedVideos();
+  
+  res.json({
+    code: 200,
+    message: '已重置使用记录',
+    data: null
+  });
 });
 
 module.exports = router; 
