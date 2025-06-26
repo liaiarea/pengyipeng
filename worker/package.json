@@ -1,0 +1,32 @@
+{
+  "name": "nfc-douyin-worker",
+  "version": "1.0.0",
+  "description": "NFC抖音视频营销工具 - Cloudflare Workers版本",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:staging": "wrangler deploy --env staging",
+    "tail": "wrangler tail",
+    "test": "vitest",
+    "build": "npm run build:client && npm run prepare:assets",
+    "build:client": "cd ../client && npm run build",
+    "prepare:assets": "cp -r ../client/dist ./assets",
+    "preview": "wrangler dev --local",
+    "kv:create": "wrangler kv:namespace create VIDEO_CACHE",
+    "kv:create:preview": "wrangler kv:namespace create VIDEO_CACHE --preview",
+    "secrets:set": "npm run secrets:set:kuaizi && npm run secrets:set:douyin",
+    "secrets:set:kuaizi": "wrangler secret put KUAIZI_APP_KEY && wrangler secret put KUAIZI_APP_SECRET && wrangler secret put KUAIZI_ACCOUNT_ID",
+    "secrets:set:douyin": "wrangler secret put DOUYIN_APP_ID && wrangler secret put DOUYIN_APP_SECRET"
+  },
+  "keywords": ["nfc", "douyin", "marketing", "video", "cloudflare", "workers"],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240925.0",
+    "vitest": "^1.0.0",
+    "wrangler": "^3.78.0"
+  },
+  "dependencies": {}
+} 

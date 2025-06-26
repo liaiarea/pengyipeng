@@ -9,7 +9,11 @@
     "client:dev": "cd client && npm run dev",
     "build": "cd client && npm run build",
     "start": "cd server && npm start",
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install"
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install && cd ../worker && npm install",
+    "worker:dev": "cd worker && npm run dev",
+    "worker:deploy": "npm run build && cd worker && npm run deploy",
+    "worker:deploy:staging": "npm run build && cd worker && npm run deploy:staging",
+    "worker:setup": "cd worker && npm run kv:create && npm run kv:create:preview"
   },
   "keywords": ["nfc", "douyin", "marketing", "video", "kuaizi"],
   "author": "Your Name",

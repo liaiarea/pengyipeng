@@ -2,6 +2,21 @@
 
 一个结合NFC技术和抖音SDK的创新营销推广工具，通过碰一碰NFC标签直接发布抖音视频。
 
+## 🌟 部署选择
+
+### 🚀 Cloudflare Workers（推荐）
+- ✅ **全球CDN加速**：边缘计算，低延迟
+- ✅ **无服务器运维**：零运维成本
+- ✅ **自动扩展**：按需扩容
+- ✅ **成本优化**：免费额度丰富（每天10万请求）
+
+### 🖥️ 传统服务器
+- ✅ **完全控制**：服务器完全自主管理
+- ✅ **数据库选择**：支持多种数据库
+- ✅ **定制化强**：可深度定制功能
+
+**📖 详细部署指南**：[Cloudflare Workers 部署指南](./CLOUDFLARE_DEPLOY.md)
+
 ## ✨ 项目特色
 
 - 🏷️ **NFC一碰即发** - 用户只需碰一碰NFC标签即可跳转发布视频
@@ -28,6 +43,35 @@
 - **CDN** - 静态资源加速
 
 ## 🚀 快速开始
+
+选择你的部署方式：
+
+### 🌟 方式一：Cloudflare Workers（推荐）
+
+```bash
+# 1. 安装 Wrangler CLI
+npm install -g wrangler
+
+# 2. 登录 Cloudflare
+wrangler login
+
+# 3. 克隆项目
+git clone <repository-url>
+cd nfc-douyin-video
+
+# 4. 安装依赖
+npm run install:all
+
+# 5. 一键部署
+npm run worker:deploy:staging  # staging环境
+npm run worker:deploy          # 生产环境
+```
+
+**📖 完整部署指南**：[Cloudflare Workers 部署指南](./CLOUDFLARE_DEPLOY.md)
+
+---
+
+### 🖥️ 方式二：传统服务器部署
 
 ### 1. 克隆项目
 \`\`\`bash
