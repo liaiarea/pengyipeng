@@ -1,5 +1,5 @@
 # Cloudflare Workers + Static Assets 配置
-name = "nfc-douyin-video"
+name = "pyp6"
 main = "./server/index.js"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
@@ -23,13 +23,13 @@ preview_id = ""  # 预览环境KV命名空间ID
 
 # 生产环境配置
 [env.production]
-name = "nfc-douyin-video"
+name = "pyp6"
 [env.production.vars]
 NODE_ENV = "production"
 
 # 测试环境配置  
 [env.staging]
-name = "nfc-douyin-video-staging"
+name = "pyp6-staging"
 [env.staging.vars]
 NODE_ENV = "staging"
 
