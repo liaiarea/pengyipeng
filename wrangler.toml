@@ -42,18 +42,4 @@ NODE_ENV = "staging"
 
 # 构建配置
 [build]
-command = "npm run build:all"
-
-# 兼容性设置
-[compatibility_flags]
-nodejs_compat = true
-
-# 速率限制配置
-[[durable_objects.bindings]]
-name = "RATE_LIMITER"
-class_name = "RateLimiter"
-
-# 路由配置
-[[routes]]
-pattern = "nfc-douyin-video.workers.dev/*"
-zone_name = "workers.dev" 
+command = "npm run build:all" 
