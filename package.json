@@ -2,23 +2,33 @@
   "name": "nfc-douyin-video",
   "version": "1.0.0",
   "description": "碰一碰发抖音视频营销工具",
-  "main": "index.js",
+  "type": "module",
+  "main": "server/index.js",
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
     "server:dev": "cd server && npm run dev",
     "client:dev": "cd client && npm run dev",
-    "build": "cd client && npm run build",
+    "build": "npm run build:client",
+    "build:all": "npm run install:deps && npm run build:client",
+    "build:client": "cd client && npm run build",
     "start": "cd server && npm start",
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install && cd ../worker && npm install",
-    "worker:dev": "cd worker && npm run dev",
-    "worker:deploy": "npm run build && cd worker && npm run deploy",
-    "worker:deploy:staging": "npm run build && cd worker && npm run deploy:staging",
-    "worker:setup": "cd worker && npm run kv:create && npm run kv:create:preview"
+    "install:deps": "npm install && cd server && npm install && cd ../client && npm install",
+    "install:all": "npm run install:deps && cd worker && npm install",
+    "deploy": "wrangler deploy",
+    "deploy:staging": "wrangler deploy --env staging",
+    "dev:wrangler": "wrangler dev",
+    "preview": "wrangler dev --local",
+    "cf:login": "wrangler login",
+    "cf:setup": "npm run cf:login && npm run kv:create",
+    "kv:create": "wrangler kv:namespace create VIDEO_CACHE && wrangler kv:namespace create VIDEO_CACHE --preview",
+    "secrets:set": "wrangler secret put KUAIZI_APP_KEY && wrangler secret put KUAIZI_APP_SECRET && wrangler secret put KUAIZI_ACCOUNT_ID && wrangler secret put DOUYIN_APP_ID && wrangler secret put DOUYIN_APP_SECRET"
   },
-  "keywords": ["nfc", "douyin", "marketing", "video", "kuaizi"],
+  "keywords": ["nfc", "douyin", "marketing", "video", "kuaizi", "cloudflare", "workers"],
   "author": "Your Name",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^8.2.0"
-  }
+    "concurrently": "^8.2.0",
+    "wrangler": "^3.78.0"
+  },
+  "dependencies": {}
 } 
