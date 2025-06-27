@@ -1,14 +1,14 @@
 # Cloudflare Workers + Static Assets 配置
 name = "pyp6"
 main = "./server/index.js"
-compatibility_date = "2024-01-01"
+compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
 # 静态资源配置
 [assets]
 directory = "./client/dist"
-not_found_handling = "single_page_application"
-html_handling = "auto"
+not_found_handling = "single-page-application"
+html_handling = "auto-trailing-slash"
 
 # 环境变量配置
 [vars]
@@ -22,11 +22,11 @@ API_VERSION = "v1"
 # DOUYIN_APP_ID = "your_douyin_app_id"
 # DOUYIN_APP_SECRET = "your_douyin_app_secret"
 
-# KV命名空间配置
-[[kv_namespaces]]
-binding = "VIDEO_CACHE"
-id = ""  # 部署时需要创建KV命名空间并填入ID
-preview_id = ""  # 预览环境KV命名空间ID
+# KV命名空间配置（需要先创建KV命名空间）
+# [[kv_namespaces]]
+# binding = "VIDEO_CACHE"
+# id = "your_kv_namespace_id"
+# preview_id = "your_preview_kv_namespace_id"
 
 # 生产环境配置
 [env.production]

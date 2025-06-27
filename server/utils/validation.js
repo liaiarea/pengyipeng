@@ -109,6 +109,70 @@ export function validateDouyinShare(data) {
 }
 
 /**
+ * 通用输入验证函数
+ */
+export function validateInput(data, rules) {
+  const errors = [];
+  
+  for (const [field, rule] of Object.entries(rules)) {
+    const value = data[field];
+    
+    // 检查必需字段
+    if (rule.required && (value === undefined || value === null || value === '')) {
+      errors.push(`${field}是必需的`);
+      continue;
+    }
+    
+    // 跳过非必需且为空的字段
+    if (!rule.required && (value === undefined || value === null || value === '')) {
+      continue;
+    }
+    
+    // 类型检查
+    if (rule.type && typeof value !== rule.type) {
+      errors.push(`${field}必须是${rule.type}类型`);
+      continue;
+    }
+    
+    // 字符串长度检查
+    if (rule.minLength && typeof value === 'string' && value.length < rule.minLength) {
+      errors.push(`${field}长度不能少于${rule.minLength}字符`);
+    }
+    
+    if (rule.maxLength && typeof value === 'string' && value.length > rule.maxLength) {
+      errors.push(`${field}长度不能超过${rule.maxLength}字符`);
+    }
+    
+    // 数值范围检查
+    if (rule.min && typeof value === 'number' && value < rule.min) {
+      errors.push(`${field}不能小于${rule.min}`);
+    }
+    
+    if (rule.max && typeof value === 'number' && value > rule.max) {
+      errors.push(`${field}不能大于${rule.max}`);
+    }
+    
+    // 正则表达式验证
+    if (rule.pattern && typeof value === 'string' && !rule.pattern.test(value)) {
+      errors.push(`${field}格式无效`);
+    }
+    
+    // 自定义验证函数
+    if (rule.validator && typeof rule.validator === 'function') {
+      const result = rule.validator(value);
+      if (result !== true) {
+        errors.push(typeof result === 'string' ? result : `${field}验证失败`);
+      }
+    }
+  }
+  
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+/**
  * 验证URL格式
  */
 function isValidUrl(string) {
