@@ -28,6 +28,10 @@
             #{{ tag }}
           </span>
         </div>
+        <div class="video-stats">
+          <span class="duration">⏱️ {{ formatDuration(videoData.duration) }}</span>
+          <span class="resolution">📺 {{ videoData.width }}x{{ videoData.height }}</span>
+        </div>
       </div>
 
       <div class="action-buttons">
@@ -46,7 +50,7 @@
           size="large" 
           block
           @click="refreshVideo"
-          :disabled="redirecting"
+          :disabled="redirecting || loading"
           style="margin-top: 12px;"
         >
           换一个视频 🔄
@@ -74,7 +78,6 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { Toast } from 'vant'
-import axios from 'axios'
 
 export default {
   name: 'NfcRedirect',
@@ -89,29 +92,45 @@ export default {
     const storeId = route.query.store_id || 'default'
     const category = route.query.category || 'general'
 
-    // 获取视频数据
+    // 获取随机视频
     const fetchVideo = async () => {
       try {
         loading.value = true
         error.value = null
 
-        console.log('🔍 获取视频参数:', { storeId, category })
+        console.log('🔍 获取随机视频参数:', { storeId, category })
 
-        const response = await axios.post('/api/nfc/trigger', {
-          store_id: storeId,
-          category: category
+        // 直接调用快子API获取随机视频
+        const response = await fetch('/api/kuaizi/random-video', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
         })
 
-        if (response.data.code === 200) {
-          videoData.value = response.data.data.video
-          console.log('✅ 获取视频成功:', videoData.value)
+        const data = await response.json()
+
+        if (data.code === 200) {
+          videoData.value = data.data.video
+          console.log('✅ 获取随机视频成功:', videoData.value)
+          
+          // 显示成功提示
+          Toast.success({
+            message: '视频加载成功！',
+            duration: 1500
+          })
         } else {
-          throw new Error(response.data.message || '获取视频失败')
+          throw new Error(data.message || '获取视频失败')
         }
 
       } catch (err) {
         console.error('❌ 获取视频失败:', err)
-        error.value = err.response?.data?.message || err.message || '网络错误'
+        error.value = err.message || '网络错误，请检查您的网络连接'
+        
+        Toast.fail({
+          message: '获取视频失败',
+          duration: 2000
+        })
       } finally {
         loading.value = false
       }
@@ -138,33 +157,27 @@ export default {
           throw new Error('请在手机上打开此页面')
         }
 
-        // 生成抖音分享链接
-        const response = await axios.post('/api/douyin/share-url', {
-          video_url: videoData.value.video_url,
-          caption: videoData.value.caption,
-          hashtags: videoData.value.hashtags?.join(',') || ''
-        })
+        // 构建抖音分享URL Scheme
+        const videoUrl = encodeURIComponent(videoData.value.video_url)
+        const caption = encodeURIComponent(videoData.value.caption || '精彩视频内容')
+        
+        // 抖音URL Scheme格式
+        const douyinUrl = `snssdk1128://openRecordPage?recordOrigin=system&recordParam={"video_url":"${videoUrl}","caption":"${caption}"}`
+        
+        console.log('🔗 抖音分享链接:', douyinUrl)
 
-        if (response.data.code === 200) {
-          const shareUrl = response.data.data.share_url
-          console.log('🔗 抖音分享链接:', shareUrl)
+        // 尝试跳转到抖音
+        window.location.href = douyinUrl
 
-          // 尝试跳转到抖音
-          window.location.href = shareUrl
-
-          // 备用方案：延迟后显示手动跳转提示
-          setTimeout(() => {
-            Toast.clear()
-            Toast({
-              message: '如果没有自动跳转，请手动打开抖音',
-              duration: 3000
-            })
-            redirecting.value = false
-          }, 3000)
-
-        } else {
-          throw new Error(response.data.message || '生成分享链接失败')
-        }
+        // 备用方案：延迟后显示手动跳转提示
+        setTimeout(() => {
+          Toast.clear()
+          Toast({
+            message: '如果没有自动跳转，请手动打开抖音',
+            duration: 3000
+          })
+          redirecting.value = false
+        }, 3000)
 
       } catch (err) {
         console.error('❌ 分享失败:', err)
@@ -176,6 +189,8 @@ export default {
 
     // 刷新视频
     const refreshVideo = () => {
+      if (loading.value || redirecting.value) return
+      
       videoData.value = null
       fetchVideo()
     }
@@ -183,6 +198,14 @@ export default {
     // 重试
     const retry = () => {
       fetchVideo()
+    }
+
+    // 格式化视频时长
+    const formatDuration = (seconds) => {
+      if (!seconds) return '0:00'
+      const minutes = Math.floor(seconds / 60)
+      const remainingSeconds = Math.floor(seconds % 60)
+      return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
     }
 
     // 视频加载事件
@@ -207,6 +230,7 @@ export default {
       shareToDouyin,
       refreshVideo,
       retry,
+      formatDuration,
       onVideoLoadStart,
       onVideoCanPlay
     }
@@ -276,6 +300,7 @@ export default {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-bottom: 12px;
 }
 
 .hashtag {
@@ -284,6 +309,14 @@ export default {
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 0.9rem;
+}
+
+.video-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 8px;
 }
 
 .action-buttons {

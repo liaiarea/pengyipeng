@@ -23,12 +23,22 @@
     "kv:create": "wrangler kv:namespace create VIDEO_CACHE && wrangler kv:namespace create VIDEO_CACHE --preview",
     "secrets:set": "wrangler secret put KUAIZI_APP_KEY && wrangler secret put KUAIZI_APP_SECRET && wrangler secret put KUAIZI_ACCOUNT_ID && wrangler secret put DOUYIN_APP_ID && wrangler secret put DOUYIN_APP_SECRET"
   },
-  "keywords": ["nfc", "douyin", "marketing", "video", "kuaizi", "cloudflare", "workers"],
+  "keywords": [
+    "nfc",
+    "douyin",
+    "marketing",
+    "video",
+    "kuaizi",
+    "cloudflare",
+    "workers"
+  ],
   "author": "Your Name",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.0",
     "wrangler": "^4.22.0"
   },
-  "dependencies": {}
-} 
+  "dependencies": {
+    "crypto-js": "^4.2.0"
+  }
+}

@@ -3,6 +3,8 @@
  * 提供视频素材获取和管理功能
  */
 
+import { md5 } from '../utils/md5.js';
+
 export class KuaiziService {
   constructor(env) {
     this.baseURL = 'https://openapi.kuaizi.co/v2';
@@ -14,69 +16,32 @@ export class KuaiziService {
     
     if (!this.appKey || !this.appSecret) {
       console.error('❌ 快子API配置缺失，请检查环境变量');
+    } else {
+      console.log('✅ 快子API配置已加载:', {
+        appKey: this.appKey,
+        appSecret: this.appSecret.substring(0, 10) + '...',
+        accountId: this.accountId
+      });
     }
-  }
-
-  /**
-   * MD5哈希函数 - Cloudflare Workers兼容版本
-   */
-  async md5(text) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(text);
-    
-    // 使用简单的MD5实现
-    function md5cycle(x, k) {
-      let a = x[0], b = x[1], c = x[2], d = x[3];
-      
-      a = ff(a, b, c, d, k[0], 7, -680876936);
-      d = ff(d, a, b, c, k[1], 12, -389564586);
-      c = ff(c, d, a, b, k[2], 17, 606105819);
-      b = ff(b, c, d, a, k[3], 22, -1044525330);
-      // ... 更多轮次
-      
-      x[0] = add32(a, x[0]);
-      x[1] = add32(b, x[1]);
-      x[2] = add32(c, x[2]);
-      x[3] = add32(d, x[3]);
-    }
-    
-    function cmn(q, a, b, x, s, t) {
-      a = add32(add32(a, q), add32(x, t));
-      return add32((a << s) | (a >>> (32 - s)), b);
-    }
-    
-    function ff(a, b, c, d, x, s, t) {
-      return cmn((b & c) | ((~b) & d), a, b, x, s, t);
-    }
-    
-    function add32(a, b) {
-      return (a + b) & 0xFFFFFFFF;
-    }
-    
-    // 简化版MD5 - 对于API签名使用
-    // 由于完整的MD5实现过于复杂，我们使用替代方案
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    
-    // 截取前32位模拟MD5长度
-    return hash.substring(0, 32);
   }
 
   /**
    * 生成API签名 - 根据快子API文档要求
    */
-  async generateSign(timestamp) {
+  generateSign(timestamp) {
     const signString = `${timestamp}#${this.appSecret}`;
-    return await this.md5(signString);
+    console.log('🔐 签名字符串:', signString);
+    const sign = md5(signString);
+    console.log('🔑 生成签名:', sign);
+    return sign;
   }
 
   /**
    * 获取API请求头
    */
-  async getHeaders() {
+  getHeaders() {
     const timestamp = Date.now();
-    const sign = await this.generateSign(timestamp);
+    const sign = this.generateSign(timestamp);
     
     return {
       'AUTH-TIMESTAMP': timestamp.toString(),
@@ -112,7 +77,7 @@ export class KuaiziService {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: await this.getHeaders()
+        headers: this.getHeaders()
       });
 
       const data = await response.json();
@@ -133,6 +98,62 @@ export class KuaiziService {
 
     } catch (error) {
       console.error('❌ 获取素材列表失败:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取随机视频
+   */
+  async getRandomVideo(params = {}) {
+    try {
+      console.log('🎯 获取随机视频:', params);
+      
+      // 随机选择页码（前100页）
+      const randomPage = Math.floor(Math.random() * 100) + 1;
+      
+      const materialData = await this.getMaterialList({
+        type: 'video',
+        category: params.category,
+        page: randomPage,
+        size: 20
+      });
+
+      let videos = materialData.list || [];
+      
+      if (videos.length === 0) {
+        console.log('⚠️ 没有可用的视频');
+        return null;
+      }
+
+      // 随机选择一个视频
+      const randomIndex = Math.floor(Math.random() * videos.length);
+      const selectedVideo = videos[randomIndex];
+      
+      console.log('🎬 选中视频:', {
+        id: selectedVideo.id,
+        name: selectedVideo.name,
+        duration: selectedVideo.file?.file_info?.play_time || 0
+      });
+      
+      return {
+        id: selectedVideo.id,
+        video_url: selectedVideo.file?.url || '',
+        cover_url: selectedVideo.file?.thumb_url || '',
+        caption: selectedVideo.name || selectedVideo.note || '精彩视频内容',
+        hashtags: this.parseHashtags(selectedVideo.tags || ''),
+        duration: selectedVideo.file?.file_info?.play_time || 0,
+        size: selectedVideo.file?.size || 0,
+        width: selectedVideo.file?.file_info?.width || 0,
+        height: selectedVideo.file?.file_info?.height || 0,
+        fps: selectedVideo.file?.file_info?.fps || 0,
+        bitrate: selectedVideo.file?.file_info?.bitrate || 0,
+        file_ext: selectedVideo.file_ext || 'mp4',
+        create_date: selectedVideo.create_date || ''
+      };
+
+    } catch (error) {
+      console.error('❌ 获取随机视频失败:', error.message);
       throw error;
     }
   }
@@ -202,8 +223,8 @@ export class KuaiziService {
             used.push(videoId);
             await this.env.VIDEO_CACHE.put('used_videos', JSON.stringify(used));
           }
-        } catch (e) {
-          console.warn('KV存储已使用视频失败:', e);
+        } catch (kvError) {
+          console.warn('⚠️ KV存储失败:', kvError.message);
         }
       }
       
@@ -215,21 +236,26 @@ export class KuaiziService {
   }
 
   /**
-   * 获取账户信息（替代方法）
+   * 获取账户信息
    */
   async getAccountInfo() {
     try {
-      const materialData = await this.getMaterialList({
-        type: 'video',
-        page: 1,
-        size: 1
-      });
+      const url = `${this.baseURL}/account/info`;
       
-      return {
-        total_materials: materialData.total,
-        status: 'active',
-        timestamp: new Date().toISOString()
-      };
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      const data = await response.json();
+      
+      if (data.code === 200) {
+        console.log('✅ 获取账户信息成功:', data.data);
+        return data.data;
+      } else {
+        this.handleKuaiziError(data.code, data.message);
+        throw new Error(data.message || '获取账户信息失败');
+      }
     } catch (error) {
       console.error('❌ 获取账户信息失败:', error.message);
       throw error;
@@ -237,37 +263,34 @@ export class KuaiziService {
   }
 
   /**
-   * 解析标签字符串
+   * 解析标签
    */
   parseHashtags(tagsString) {
     if (!tagsString) return [];
-    return tagsString.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+    return tagsString.split(/[,，\s]+/).filter(tag => tag.trim().length > 0);
   }
 
   /**
-   * 处理快子API特定错误码
+   * 处理快子API错误码
    */
   handleKuaiziError(errorCode, errorMessage) {
-    switch (errorCode) {
-      case 40000:
-        console.error('❌ 快子API: 参数错误 -', errorMessage);
-        break;
-      case 40005:
-        console.error('❌ 快子API: 签名验证失败 -', errorMessage);
-        break;
-      case 61000:
-        console.error('❌ 快子API: 账户余额不足 -', errorMessage);
-        break;
-      default:
-        console.error(`❌ 快子API错误 ${errorCode}:`, errorMessage);
-    }
+    const errorMap = {
+      40000: '余额不足，请充值后再试',
+      40005: '视频生成中，请稍后再试',
+      61000: '账户被冻结，请联系客服',
+      4002: 'API认证失败，请检查密钥配置',
+      4003: 'APP-KEY不存在，请检查配置'
+    };
+    
+    const friendlyMessage = errorMap[errorCode] || errorMessage;
+    console.error(`❌ 快子API错误 [${errorCode}]: ${friendlyMessage}`);
   }
 
   /**
-   * 重置已使用视频列表
+   * 重置已使用视频记录
    */
   resetUsedVideos() {
     this.usedVideos.clear();
-    console.log('�� 已重置使用记录');
+    console.log('�� 已重置视频使用记录');
   }
 } 

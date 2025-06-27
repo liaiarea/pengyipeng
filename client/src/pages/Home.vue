@@ -1,508 +1,534 @@
 <template>
-  <div class="home-page">
-    <!-- 顶部横幅区域 -->
-    <div class="header-banner">
-      <div class="banner-content">
-        <h1 class="main-title">碰一碰 领福利</h1>
-        <p class="sub-title">让商家营销 更是简单准</p>
-        
-        <!-- 3D效果装饰 -->
-        <div class="decoration-3d">
-          <div class="floating-card card-1">💳</div>
-          <div class="floating-card card-2">🎁</div>
-          <div class="floating-card card-3">📱</div>
-        </div>
-      </div>
-      
-      <!-- 客服和案例按钮 -->
-      <div class="service-buttons">
-        <van-button 
-          class="service-btn customer-service" 
-          size="small" 
-          round
-          @click="contactService"
-        >
-          <van-icon name="service" />
-          客服
-        </van-button>
-        <van-button 
-          class="service-btn cases" 
-          size="small" 
-          round
-          @click="viewCases"
-        >
-          商家案例
-        </van-button>
-      </div>
+  <div class="home">
+    <!-- 头部标题 -->
+    <div class="header">
+      <h1>碰一碰发抖音</h1>
+      <p>NFC一碰即发，视频营销神器</p>
     </div>
 
-    <!-- 支付/会员区域 -->
-    <div class="payment-section">
-      <div class="payment-card">
-        <div class="payment-left">
-          <div class="payment-icon">💳</div>
-          <div class="payment-text">
-            <span class="payment-title">支付</span>
-            <span class="payment-desc">点击付款</span>
-          </div>
-        </div>
+    <!-- 功能卡片 -->
+    <div class="features">
+      <!-- NFC功能模拟 -->
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <h3>NFC触发</h3>
+        <p>模拟NFC标签触发</p>
         <van-button 
           type="primary" 
-          size="small" 
-          round
-          @click="register"
+          block 
+          @click="simulateNFC"
+          :loading="nfcLoading"
         >
-          注册会员
+          {{ nfcLoading ? '跳转中...' : '模拟NFC触发' }}
+        </van-button>
+      </div>
+
+      <!-- 快子API测试 -->
+      <div class="feature-card">
+        <div class="feature-icon">🎬</div>
+        <h3>视频测试</h3>
+        <p>测试快子API连接</p>
+        <van-button 
+          type="success" 
+          block 
+          @click="testKuaiziAPI"
+          :loading="apiLoading"
+        >
+          {{ apiLoading ? '测试中...' : '测试视频API' }}
+        </van-button>
+      </div>
+
+      <!-- 随机视频 -->
+      <div class="feature-card">
+        <div class="feature-icon">🎲</div>
+        <h3>随机视频</h3>
+        <p>获取随机视频内容</p>
+        <van-button 
+          type="primary" 
+          block 
+          @click="getRandomVideo"
+          :loading="videoLoading"
+        >
+          {{ videoLoading ? '获取中...' : '获取随机视频' }}
+        </van-button>
+      </div>
+
+      <!-- 分享到抖音 -->
+      <div class="feature-card">
+        <div class="feature-icon">🎵</div>
+        <h3>抖音分享</h3>
+        <p>直接跳转抖音发布</p>
+        <van-button 
+          type="warning" 
+          block 
+          @click="shareToDouyin"
+          :disabled="!currentVideo"
+        >
+          发布到抖音
         </van-button>
       </div>
     </div>
 
-    <!-- 发视频/种草区域 -->
-    <div class="feature-section">
-      <h3 class="section-title">发视频/种草</h3>
-      <div class="feature-grid">
-                 <div 
-           class="feature-item" 
-           v-for="platform in videoPlatforms" 
-           :key="platform.id"
-           @click="handlePlatformClick(platform)"
-         >
-           <div class="feature-icon">
-             <PlatformIcon :platform="platform.id" :color="platform.color" />
-           </div>
-           <span class="feature-name">{{ platform.name }}</span>
-         </div>
+    <!-- API状态显示 -->
+    <div v-if="apiStatus" class="api-status">
+      <van-cell-group>
+        <van-cell title="API状态" :value="apiStatus.status" />
+        <van-cell title="视频总数" :value="apiStatus.total_videos?.toLocaleString() || '0'" />
+        <van-cell title="APP-KEY" :value="apiStatus.config?.app_key || '未配置'" />
+        <van-cell title="账户ID" :value="apiStatus.config?.account_id || '未配置'" />
+      </van-cell-group>
+    </div>
+
+    <!-- 当前视频信息 -->
+    <div v-if="currentVideo" class="current-video">
+      <h3>当前视频</h3>
+      <div class="video-info">
+        <img :src="currentVideo.cover_url" :alt="currentVideo.caption" class="video-cover" />
+        <div class="video-details">
+          <p class="video-title">{{ currentVideo.caption }}</p>
+          <p class="video-stats">
+            {{ formatDuration(currentVideo.duration) }} | 
+            {{ currentVideo.width }}x{{ currentVideo.height }}
+          </p>
+          <div class="hashtags" v-if="currentVideo.hashtags?.length">
+            <span v-for="tag in currentVideo.hashtags.slice(0, 3)" :key="tag" class="hashtag">
+              #{{ tag }}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- 图文发布区域 -->
-    <div class="feature-section">
-      <h3 class="section-title">图文发布</h3>
-      <div class="feature-grid">
-                 <div 
-           class="feature-item" 
-           v-for="platform in imagePlatforms" 
-           :key="platform.id"
-           @click="handlePlatformClick(platform)"
-         >
-           <div class="feature-icon">
-             <PlatformIcon :platform="platform.id" :color="platform.color" />
-           </div>
-           <span class="feature-name">{{ platform.name }}</span>
-         </div>
+    <!-- 使用说明 -->
+    <div class="instructions">
+      <h3>使用说明</h3>
+      <div class="step" v-for="(step, index) in steps" :key="index">
+        <div class="step-number">{{ index + 1 }}</div>
+        <div class="step-content">
+          <h4>{{ step.title }}</h4>
+          <p>{{ step.description }}</p>
+        </div>
       </div>
     </div>
-
-    <!-- 打卡/点评/收藏区域 -->
-    <div class="feature-section">
-      <h3 class="section-title">打卡/点评/收藏</h3>
-      <div class="feature-grid review-grid">
-                 <div 
-           class="feature-item" 
-           v-for="platform in reviewPlatforms" 
-           :key="platform.id"
-           @click="handlePlatformClick(platform)"
-         >
-           <div class="feature-icon">
-             <PlatformIcon :platform="platform.id" :color="platform.color" />
-           </div>
-           <span class="feature-name">{{ platform.name }}</span>
-         </div>
-      </div>
-    </div>
-
-    <!-- 底部间距 -->
-    <div class="bottom-space"></div>
   </div>
 </template>
 
 <script>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { Toast } from 'vant'
-import PlatformIcon from '../components/PlatformIcon.vue'
 
 export default {
   name: 'Home',
-  components: {
-    PlatformIcon
-  },
   setup() {
-    // 视频平台数据
-    const videoPlatforms = ref([
-      {
-        id: 'douyin',
-        name: '发抖音',
-        color: '#000000',
-        action: 'video'
-      },
-      {
-        id: 'kuaishou',
-        name: '发快手',
-        color: '#FF6600',
-        action: 'video'
-      },
-      {
-        id: 'xiaohongshu',
-        name: '发小红书',
-        color: '#FF2442',
-        action: 'video'
-      },
-      {
-        id: 'wechat-channels',
-        name: '发视频号',
-        color: '#07C160',
-        action: 'video'
-      }
-    ])
+    const router = useRouter()
+    const nfcLoading = ref(false)
+    const apiLoading = ref(false)
+    const videoLoading = ref(false)
+    const apiStatus = ref(null)
+    const currentVideo = ref(null)
 
-    // 图文平台数据
-    const imagePlatforms = ref([
+    // 使用步骤
+    const steps = [
       {
-        id: 'wechat-moments',
-        name: '发朋友圈',
-        color: '#07C160',
-        action: 'image'
+        title: "测试API连接",
+        description: "点击「测试视频API」确认快子API正常工作"
       },
       {
-        id: 'xiaohongshu-note',
-        name: '小红书图文',
-        color: '#FF2442',
-        action: 'image'
+        title: "获取随机视频", 
+        description: "点击「获取随机视频」从26000+视频库中随机选择"
+      },
+      {
+        title: "分享到抖音",
+        description: "点击「发布到抖音」直接跳转抖音发布页面"
+      },
+      {
+        title: "NFC标签配置",
+        description: "将网址写入NFC标签，实现一碰即发功能"
       }
-    ])
+    ]
 
-    // 点评平台数据
-    const reviewPlatforms = ref([
-      {
-        id: 'dianping',
-        name: '点评打卡',
-        color: '#FFBA00',
-        action: 'review'
-      },
-      {
-        id: 'meituan',
-        name: '点评+收藏',
-        color: '#FFBA00',
-        action: 'review'
-      },
-      {
-        id: 'eleme',
-        name: '点评+收藏',
-        color: '#00D7FF',
-        action: 'review'
-      },
-      {
-        id: 'baidu-map',
-        name: '点评+收藏',
-        color: '#3385FF',
-        action: 'review'
-      },
-      {
-        id: 'douyin-review',
-        name: '点评+收藏',
-        color: '#000000',
-        action: 'review'
-      }
-    ])
+    // 模拟NFC触发
+    const simulateNFC = async () => {
+      try {
+        nfcLoading.value = true
+        
+        Toast.loading({
+          message: '模拟NFC触发中...',
+          forbidClick: true,
+          duration: 0
+        })
 
-    // 处理平台点击
-    const handlePlatformClick = (platform) => {
-      console.log('点击平台:', platform)
-      
-      if (platform.id === 'douyin' && platform.action === 'video') {
-        // 如果是发抖音视频，跳转到NFC页面进行演示
-        window.location.href = '/nfc-redirect?store_id=demo&category=general'
-      } else {
-        Toast(`${platform.name} 功能正在开发中...`)
+        // 模拟NFC触发延迟
+        await new Promise(resolve => setTimeout(resolve, 1000))
+
+        Toast.clear()
+        Toast.success('NFC触发成功！')
+
+        // 跳转到NFC重定向页面
+        router.push({
+          path: '/nfc-redirect',
+          query: {
+            store_id: 'demo_store',
+            category: 'entertainment'
+          }
+        })
+
+      } catch (error) {
+        Toast.clear()
+        Toast.fail('NFC模拟失败')
+        console.error('NFC模拟失败:', error)
+      } finally {
+        nfcLoading.value = false
       }
     }
 
-    // 联系客服
-    const contactService = () => {
-      Toast('正在连接客服...')
+    // 测试快子API
+    const testKuaiziAPI = async () => {
+      try {
+        apiLoading.value = true
+        
+        Toast.loading({
+          message: '测试API连接中...',
+          forbidClick: true,
+          duration: 0
+        })
+
+        const response = await fetch('/api/kuaizi/test', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+
+        const data = await response.json()
+
+        Toast.clear()
+
+        if (data.code === 200) {
+          apiStatus.value = data.data
+          Toast.success({
+            message: `API连接成功！共${data.data.total_videos?.toLocaleString()}个视频`,
+            duration: 3000
+          })
+        } else {
+          throw new Error(data.message || 'API测试失败')
+        }
+
+      } catch (error) {
+        Toast.clear()
+        Toast.fail(`API测试失败: ${error.message}`)
+        console.error('API测试失败:', error)
+      } finally {
+        apiLoading.value = false
+      }
     }
 
-    // 查看案例
-    const viewCases = () => {
-      Toast('商家案例页面开发中...')
+    // 获取随机视频
+    const getRandomVideo = async () => {
+      try {
+        videoLoading.value = true
+        
+        Toast.loading({
+          message: '获取随机视频中...',
+          forbidClick: true,
+          duration: 0
+        })
+
+        const response = await fetch('/api/kuaizi/random-video', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+
+        const data = await response.json()
+
+        Toast.clear()
+
+        if (data.code === 200) {
+          currentVideo.value = data.data.video
+          Toast.success('获取随机视频成功！')
+        } else {
+          throw new Error(data.message || '获取视频失败')
+        }
+
+      } catch (error) {
+        Toast.clear()
+        Toast.fail(`获取视频失败: ${error.message}`)
+        console.error('获取视频失败:', error)
+      } finally {
+        videoLoading.value = false
+      }
     }
 
-    // 注册会员
-    const register = () => {
-      Toast('会员注册功能开发中...')
+    // 分享到抖音
+    const shareToDouyin = () => {
+      if (!currentVideo.value) {
+        Toast.fail('请先获取视频')
+        return
+      }
+
+      try {
+        // 检测设备类型
+        const userAgent = navigator.userAgent
+        const isIOS = /iPhone|iPad|iPod/i.test(userAgent)
+        const isAndroid = /Android/i.test(userAgent)
+
+        if (!isIOS && !isAndroid) {
+          Toast.fail('请在手机上打开此页面')
+          return
+        }
+
+        // 构建抖音分享URL Scheme
+        const videoUrl = encodeURIComponent(currentVideo.value.video_url)
+        const caption = encodeURIComponent(currentVideo.value.caption || '精彩视频内容')
+        
+        // 抖音URL Scheme格式
+        const douyinUrl = `snssdk1128://openRecordPage?recordOrigin=system&recordParam={"video_url":"${videoUrl}","caption":"${caption}"}`
+        
+        console.log('🔗 抖音分享链接:', douyinUrl)
+
+        // 尝试跳转到抖音
+        window.location.href = douyinUrl
+
+        Toast.success('正在跳转抖音...')
+
+      } catch (error) {
+        Toast.fail('分享失败，请重试')
+        console.error('分享失败:', error)
+      }
+    }
+
+    // 格式化视频时长
+    const formatDuration = (seconds) => {
+      if (!seconds) return '0:00'
+      const minutes = Math.floor(seconds / 60)
+      const remainingSeconds = Math.floor(seconds % 60)
+      return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
     }
 
     return {
-      videoPlatforms,
-      imagePlatforms,
-      reviewPlatforms,
-      handlePlatformClick,
-      contactService,
-      viewCases,
-      register
+      nfcLoading,
+      apiLoading,
+      videoLoading,
+      apiStatus,
+      currentVideo,
+      steps,
+      simulateNFC,
+      testKuaiziAPI,
+      getRandomVideo,
+      shareToDouyin,
+      formatDuration
     }
   }
 }
 </script>
 
 <style scoped>
-.home-page {
+.home {
   min-height: 100vh;
-  background: #f5f7fa;
-}
-
-/* 顶部横幅 */
-.header-banner {
+  padding: 20px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 40px 20px 30px 20px;
-  position: relative;
-  overflow: hidden;
 }
 
-.banner-content {
+.header {
   text-align: center;
   color: white;
-  position: relative;
-  z-index: 2;
+  margin-bottom: 30px;
 }
 
-.main-title {
-  font-size: 2rem;
-  font-weight: bold;
-  margin: 0 0 8px 0;
+.header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.sub-title {
-  font-size: 1rem;
+.header p {
+  font-size: 1.1rem;
   opacity: 0.9;
-  margin: 0;
 }
 
-/* 3D装饰效果 */
-.decoration-3d {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-}
-
-.floating-card {
-  position: absolute;
-  font-size: 2rem;
-  animation: float 3s ease-in-out infinite;
-  opacity: 0.3;
-}
-
-.card-1 {
-  top: 20px;
-  right: 20px;
-  animation-delay: 0s;
-}
-
-.card-2 {
-  top: 50%;
-  left: 10px;
-  animation-delay: -1s;
-}
-
-.card-3 {
-  bottom: 20px;
-  right: 50px;
-  animation-delay: -2s;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
-}
-
-/* 服务按钮 */
-.service-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 20px;
-}
-
-.service-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  backdrop-filter: blur(10px);
-}
-
-.service-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* 支付区域 */
-.payment-section {
-  padding: 20px;
-}
-
-.payment-card {
-  background: white;
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.payment-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.payment-icon {
-  font-size: 2rem;
-}
-
-.payment-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.payment-title {
-  font-weight: 600;
-  color: #333;
-}
-
-.payment-desc {
-  font-size: 0.9rem;
-  color: #666;
-}
-
-/* 功能区域 */
-.feature-section {
-  padding: 0 20px 30px 20px;
-}
-
-.section-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 16px 0;
-}
-
-.feature-grid {
+.features {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
 }
 
-.review-grid {
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-}
-
-.feature-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 8px;
+.feature-card {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  cursor: pointer;
-  transition: all 0.3s ease;
+  padding: 24px;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
 }
 
-.feature-item:hover {
+.feature-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-}
-
-.feature-item:active {
-  transform: translateY(0px);
 }
 
 .feature-icon {
-  width: 48px;
-  height: 48px;
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.feature-card h3 {
+  font-size: 1.3rem;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.feature-card p {
+  color: #666;
+  margin-bottom: 16px;
+  font-size: 0.95rem;
+}
+
+.api-status {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.current-video {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.current-video h3 {
+  margin-bottom: 16px;
+  color: #333;
+}
+
+.video-info {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.video-cover {
+  width: 80px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.video-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.video-title {
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #333;
+  line-height: 1.4;
+}
+
+.video-stats {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.hashtags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hashtag {
+  background: #f0f0f0;
+  color: #666;
+  padding: 3px 8px;
   border-radius: 12px;
+  font-size: 0.8rem;
+}
+
+.instructions {
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.instructions h3 {
+  margin-bottom: 20px;
+  color: #333;
+  text-align: center;
+}
+
+.step {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  align-items: flex-start;
+}
+
+.step:last-child {
+  margin-bottom: 0;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  background: #667eea;
+  color: white;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
+  font-weight: bold;
+  flex-shrink: 0;
 }
 
-.feature-name {
-  font-size: 0.85rem;
+.step-content h4 {
+  margin-bottom: 4px;
   color: #333;
-  text-align: center;
-  font-weight: 500;
 }
 
-.bottom-space {
-  height: 40px;
+.step-content p {
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 
-/* 响应式设计 */
-@media (max-width: 480px) {
-  .header-banner {
-    padding: 30px 16px 24px 16px;
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .home {
+    padding: 16px;
   }
   
-  .main-title {
-    font-size: 1.6rem;
+  .header h1 {
+    font-size: 2rem;
   }
   
-  .payment-section,
-  .feature-section {
-    padding-left: 16px;
-    padding-right: 16px;
+  .features {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
   
-  .feature-grid {
-    gap: 12px;
+  .feature-card {
+    padding: 20px;
   }
   
-  .feature-item {
-    padding: 12px 6px;
+  .video-info {
+    flex-direction: column;
   }
   
-  .feature-icon {
-    width: 40px;
-    height: 40px;
-  }
-  
-  .feature-name {
-    font-size: 0.8rem;
-  }
-}
-
-/* 深色模式适配 */
-@media (prefers-color-scheme: dark) {
-  .home-page {
-    background: #1a1a1a;
-  }
-  
-  .payment-card,
-  .feature-item {
-    background: #2a2a2a;
-    color: white;
-  }
-  
-  .section-title {
-    color: white;
-  }
-  
-  .payment-title {
-    color: white;
-  }
-  
-  .payment-desc {
-    color: #ccc;
-  }
-  
-  .feature-name {
-    color: white;
+  .video-cover {
+    width: 100%;
+    height: 200px;
+    align-self: center;
+    max-width: 150px;
   }
 }
 </style> 
